@@ -27,3 +27,5 @@ save the python code and open it with a CLI.
 If you are using Arch Linux / Derivatives that use the AUR:
 
 ```yay -S freetask-cli```
+
+# doesn't work well on windows idk why soz
