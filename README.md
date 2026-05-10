@@ -26,4 +26,4 @@ save the python code and open it with a CLI.
 
 If you are using Arch Linux / Derivatives that use the AUR:
 
-```sudo pacman -S freetask-cli```
+```yay -S freetask-cli```
