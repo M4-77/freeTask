@@ -4,6 +4,7 @@ import curses
 import json
 import random
 import time
+import re
 from pathlib import Path
 from datetime import datetime
 
@@ -14,6 +15,13 @@ SAVE_FILE = SAVE_DIR / "save.json"
 SETTINGS_FILE = SAVE_DIR / "settings.json"
 
 FREE_TIME_PER_TASK = 45
+
+# input sanitiser
+
+def clean_input(text: str) -> str:
+    text = text.decode("utf-8", errors="ignore")
+    text = re.sub(r"[\x00-\x1f\x7f]", "", text)
+    return text.strip()
 
 # themes
 
@@ -60,6 +68,7 @@ class Settings:
         self.theme = "tardis"
         SAVE_DIR.mkdir(parents=True, exist_ok=True)
         self.load()
+
     def load(self):
         if not SETTINGS_FILE.exists():
             self.save()
@@ -70,11 +79,10 @@ class Settings:
             self.theme = data.get("theme", "tardis")
         except Exception:
             self.theme = "tardis"
+
     def save(self):
         with open(SETTINGS_FILE, "w") as f:
-            json.dump({
-                "theme": self.theme
-            }, f, indent=4)
+            json.dump({"theme": self.theme}, f, indent=4)
 
 class TaskManager:
     def __init__(self):
@@ -182,11 +190,7 @@ def draw_particles(stdscr, settings):
 
     for p in particles:
         try:
-            stdscr.addstr(
-                int(p["y"]),
-                int(p["x"]),
-                random.choice(chars)
-            )
+            stdscr.addstr(int(p["y"]), int(p["x"]), random.choice(chars))
         except:
             pass
 
@@ -197,16 +201,13 @@ def center_x(width, text):
 
 def format_time(minutes):
     total_seconds = int(minutes * 60)
-
     h = total_seconds // 3600
     m = (total_seconds % 3600) // 60
     s = total_seconds % 60
-
     return f"{h:02}:{m:02}:{s:02}"
 
 def apply_theme(settings):
     theme = THEMES[settings.theme]
-
     curses.init_pair(1, *theme["selected"])
     curses.init_pair(2, *theme["border"])
     curses.init_pair(3, *theme["title"])
@@ -217,7 +218,6 @@ def apply_theme(settings):
 
 def draw_box(stdscr, y, x, h, w):
     stdscr.attron(curses.color_pair(2))
-
     stdscr.addstr(y, x, "◉" + "═" * (w - 2) + "◉")
 
     for i in range(1, h - 1):
@@ -225,7 +225,6 @@ def draw_box(stdscr, y, x, h, w):
         stdscr.addstr(y + i, x + w - 1, "║")
 
     stdscr.addstr(y + h - 1, x, "◉" + "═" * (w - 2) + "◉")
-
     stdscr.attroff(curses.color_pair(2))
 
 def add_task_screen(stdscr, manager):
@@ -233,7 +232,6 @@ def add_task_screen(stdscr, manager):
     curses.curs_set(1)
 
     stdscr.clear()
-
     h, w = stdscr.getmaxyx()
 
     box_w = 60
@@ -245,23 +243,17 @@ def add_task_screen(stdscr, manager):
     draw_box(stdscr, y, x, box_h, box_w)
 
     title = "NEW TASK"
-
     stdscr.attron(curses.A_BOLD)
     stdscr.addstr(y + 1, center_x(w, title), title)
     stdscr.attroff(curses.A_BOLD)
 
     prompt = "ENTER TASK: "
-
     stdscr.addstr(y + 3, x + 3, prompt)
-
     stdscr.refresh()
 
     try:
-        task = stdscr.getstr(
-            y + 3,
-            x + 3 + len(prompt),
-            40
-        ).decode("utf-8").strip()
+        raw = stdscr.getstr(y + 3, x + 3 + len(prompt), 40)
+        task = clean_input(raw)
     except:
         task = ""
 
@@ -273,7 +265,6 @@ def add_task_screen(stdscr, manager):
 
 def settings_menu(stdscr, settings):
     options = list(THEMES.keys())
-
     selected = options.index(settings.theme)
 
     while True:
@@ -287,25 +278,14 @@ def settings_menu(stdscr, settings):
 
         for idx, option in enumerate(options):
             y = 6 + idx
-
             if idx == selected:
                 stdscr.attron(curses.color_pair(1))
 
-            stdscr.addstr(
-                y,
-                center_x(w, option.upper()),
-                option.upper()
-            )
-
+            stdscr.addstr(y, center_x(w, option.upper()), option.upper())
             stdscr.attroff(curses.color_pair(1))
 
         footer = "[ENTER] APPLY   [Q] BACK"
-        stdscr.addstr(
-            h - 2,
-            center_x(w, footer),
-            footer
-        )
-
+        stdscr.addstr(h - 2, center_x(w, footer), footer)
         stdscr.refresh()
 
         key = stdscr.getch()
@@ -334,8 +314,8 @@ def draw_ui(stdscr, manager, settings, selected):
     draw_ui.last = now_t
 
     update_particles(w, h, frame_dt)
-
     draw_particles(stdscr, settings)
+
     theme = THEMES[settings.theme]
 
     header = "TASK TERMINAL"
@@ -379,7 +359,6 @@ def draw_ui(stdscr, manager, settings, selected):
         line = f"{arrow}{prefix} {task['task']}"
 
         y = 16 + idx
-
         if y >= h - 4:
             break
 
@@ -404,7 +383,6 @@ def draw_ui(stdscr, manager, settings, selected):
     stdscr.refresh()
 
 def main(stdscr):
-
     curses.curs_set(0)
     curses.start_color()
     curses.use_default_colors()
@@ -422,7 +400,6 @@ def main(stdscr):
     selected = 0
 
     while True:
-
         manager.tick()
 
         if manager.tasks:
