@@ -20,7 +20,10 @@ Stock themes:
   
 # INSTALLATION
 save the python code and open it with a CLI. 
+
 ```python3 /home/matt/tasks/main.py```
 <img width="439" height="54" alt="image" src="https://github.com/user-attachments/assets/c699ac28-d5f5-4ec8-932a-d9b303a02b87" />
 
-I will add this to the AUR when I get round to it
+If you are using Arch Linux / Derivatives that use the AUR:
+
+```sudo pacman -S freetask-cli```
